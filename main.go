@@ -1,12 +1,21 @@
 package main
 
 import (
+	"bufio"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"os"
 	"strconv"
 )
+
+/* estructura de  contacto*/
+type Contact struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
+	Phone string `json:"phone"`
+}
 
 func main() {
 	//revisdaremos pasar un string a numero, capturando el error de la funcion, 1 = exitoso y 2 = error
@@ -85,6 +94,62 @@ func main() {
 	log.Print("Oye, soy un log.")
 	fmt.Println("###############################")
 
+	// ejercicios de agregar contactos
+	var contacts []Contact
+
+	err4 := loadContactsFromFile(&contacts)
+	if err4 != nil {
+		fmt.Println("error al cargar los contactos...", err4)
+	}
+
+	reader := bufio.NewReader(os.Stdin)
+
+	for {
+		fmt.Print("====   GESTOR DE CONTACTOS   ==== \n",
+			"1.- Agregar un contacto\n",
+			"2.- Mostrar todos los contactos\n",
+			"3.- Salir\n",
+			"Elige una Opción: ")
+		var option int
+		_, err5 := fmt.Scanln(&option)
+		if err5 != nil {
+			fmt.Println("Error al leer la opcion: ", err5)
+			return
+		}
+		switch option {
+		case 1:
+			var c Contact
+			fmt.Print("Nombre: ")
+			c.Name, _ = reader.ReadString('\n')
+			fmt.Print("Email: ")
+			c.Email, _ = reader.ReadString('\n')
+			fmt.Print("Phone: ")
+			c.Phone, _ = reader.ReadString('\n')
+
+			// agregamos un contacto a slice
+			contacts = append(contacts, c)
+
+			// guardar en un archivo json
+			if err6 := saveContactsToFile(contacts); err6 != nil {
+				fmt.Println("Error al guardar el contacto: ", err6)
+			}
+		case 2:
+			// mostrar contacto
+			fmt.Println("###############################")
+			for index, contact := range contacts {
+				fmt.Printf("%d. Nombre: %s Email: %s Telefono: %s \n", index+1, contact.Name, contact.Email, contact.Phone)
+			}
+			fmt.Println("###############################")
+		case 3:
+			//salir del programa
+			return
+		default:
+			fmt.Println("opcion no válida")
+
+		}
+
+	}
+
 }
 
 func divide(num1, num2 int) (int, error) {
@@ -111,4 +176,37 @@ func validateZero(divisor int) {
 	if divisor == 0 {
 		panic("No se puede dividir por cero.")
 	}
+}
+
+/* guardar contacto en un archivo json*/
+func saveContactsToFile(contacts []Contact) error {
+	file, err := os.Create("contacts.json")
+	if err != nil {
+
+	}
+	defer file.Close()
+	encoder := json.NewEncoder(file)
+	err = encoder.Encode(contacts)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+func loadContactsFromFile(contacts *[]Contact) error {
+	file, err := os.Open("contacts.json")
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&contacts)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
